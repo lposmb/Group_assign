@@ -25,6 +25,7 @@ use Kanboard\Plugin\Group_assign\Model\TaskProjectMoveModel;
 use Kanboard\Plugin\Group_assign\Model\TaskRecurrenceModel;
 use Kanboard\Plugin\Group_assign\Model\NewMetaMagikSubquery;
 use Kanboard\Plugin\Group_assign\Model\OldMetaMagikSubquery;
+use Kanboard\Plugin\Group_assign\Api\Procedure\TaskExtProcedure;
 use PicoDb\Table;
 use PicoDb\Database;
 use Kanboard\Core\Security\Role;
@@ -160,7 +161,8 @@ class Plugin extends Base
             $this->template->setTemplateOverride('header/user_dropdown', 'group_assign:header/user_dropdown'); 
         }
 
-
+	//Api
+	$this->api->getProcedureHandler()->withObject(new TaskExtProcedure($this->container));
     }
     
     public function onStartup()
