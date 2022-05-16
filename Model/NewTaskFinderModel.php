@@ -222,11 +222,77 @@ class NewTaskFinderModel extends Base
     {
         return $this->db
                     ->table(TaskModel::TABLE)
+            ->columns(
+                '(SELECT COUNT(*) FROM '.CommentModel::TABLE.' WHERE task_id=tasks.id) AS nb_comments',
+                '(SELECT COUNT(*) FROM '.TaskFileModel::TABLE.' WHERE task_id=tasks.id) AS nb_files',
+                '(SELECT COUNT(*) FROM '.SubtaskModel::TABLE.' WHERE '.SubtaskModel::TABLE.'.task_id=tasks.id) AS nb_subtasks',
+                '(SELECT COUNT(*) FROM '.SubtaskModel::TABLE.' WHERE '.SubtaskModel::TABLE.'.task_id=tasks.id AND status=2) AS nb_completed_subtasks',
+                '(SELECT COUNT(*) FROM '.TaskLinkModel::TABLE.' WHERE '.TaskLinkModel::TABLE.'.task_id = tasks.id) AS nb_links',
+                '(SELECT COUNT(*) FROM '.TaskExternalLinkModel::TABLE.' WHERE '.TaskExternalLinkModel::TABLE.'.task_id = tasks.id) AS nb_external_links',
+                '(SELECT DISTINCT 1 FROM '.TaskLinkModel::TABLE.' WHERE '.TaskLinkModel::TABLE.'.task_id = tasks.id AND '.TaskLinkModel::TABLE.'.link_id = 9) AS is_milestone',
+                TaskModel::TABLE.'.id',
+                TaskModel::TABLE.'.reference',
+                TaskModel::TABLE.'.title',
+                TaskModel::TABLE.'.description',
+                TaskModel::TABLE.'.date_creation',
+                TaskModel::TABLE.'.date_modification',
+                TaskModel::TABLE.'.date_completed',
+                TaskModel::TABLE.'.date_started',
+                TaskModel::TABLE.'.date_due',
+                TaskModel::TABLE.'.color_id',
+                TaskModel::TABLE.'.project_id',
+                TaskModel::TABLE.'.column_id',
+                TaskModel::TABLE.'.swimlane_id',
+                TaskModel::TABLE.'.owner_id',
+                TaskModel::TABLE.'.creator_id',
+                TaskModel::TABLE.'.position',
+                TaskModel::TABLE.'.is_active',
+                TaskModel::TABLE.'.score',
+                TaskModel::TABLE.'.category_id',
+                TaskModel::TABLE.'.priority',
+                TaskModel::TABLE.'.date_moved',
+                TaskModel::TABLE.'.recurrence_status',
+                TaskModel::TABLE.'.recurrence_trigger',
+                TaskModel::TABLE.'.recurrence_factor',
+                TaskModel::TABLE.'.recurrence_timeframe',
+                TaskModel::TABLE.'.recurrence_basedate',
+                TaskModel::TABLE.'.recurrence_parent',
+                TaskModel::TABLE.'.recurrence_child',
+                TaskModel::TABLE.'.time_estimated',
+                TaskModel::TABLE.'.time_spent',
+                UserModel::TABLE.'.username AS assignee_username',
+                UserModel::TABLE.'.name AS assignee_name',
+                UserModel::TABLE.'.email AS assignee_email',
+                UserModel::TABLE.'.avatar_path AS assignee_avatar_path',
+                CategoryModel::TABLE.'.name AS category_name',
+                CategoryModel::TABLE.'.description AS category_description',
+                CategoryModel::TABLE.'.color_id AS category_color_id',
+                ColumnModel::TABLE.'.title AS column_name',
+                ColumnModel::TABLE.'.position AS column_position',
+                SwimlaneModel::TABLE.'.name AS swimlane_name',
+                ProjectModel::TABLE.'.name AS project_name',
+                TaskModel::TABLE.'.owner_ms',
+                GroupModel::TABLE.'.name AS assigned_groupname',
+                'GROUP_CONCAT(ms.user_id) AS assigned_multiselect_user_id'
+            )
+            ->join(UserModel::TABLE, 'id', 'owner_id', TaskModel::TABLE)
+            ->left(UserModel::TABLE, 'uc', 'id', TaskModel::TABLE, 'creator_id')
+            ->join(CategoryModel::TABLE, 'id', 'category_id', TaskModel::TABLE)
+            ->join(ColumnModel::TABLE, 'id', 'column_id', TaskModel::TABLE)
+            ->join(SwimlaneModel::TABLE, 'id', 'swimlane_id', TaskModel::TABLE)
+            ->join(GroupModel::TABLE, 'id', 'owner_gp', TaskModel::TABLE)
+            //->join(MultiselectModel::TABLE, 'id', 'owner_ms', TaskModel::TABLE)
+            ->join(ProjectModel::TABLE, 'id', 'project_id', TaskModel::TABLE)
+
+            ->left(MultiselectMemberModel::TABLE, 'ms', 'group_id', TaskModel::TABLE, 'owner_ms')
                     ->eq(TaskModel::TABLE.'.project_id', $project_id)
                     ->eq(TaskModel::TABLE.'.is_active', $status_id)
+                ->groupBy('id')
                     ->asc(TaskModel::TABLE.'.id')
                     ->findAll();
     }
+
+//     SELECT tasks.id, title, owner_gp, owner_ms, GROUP_CONCAT(ms.user_id) as owner_ms_user_id FROM tasks LEFT JOIN multiselect_has_users ms ON ms.group_id=tasks.owner_ms GROUP BY tasks.id ORDER BY 1 DESC LIMIT 5;
 
     /**
      * Get all tasks for a given project and status
